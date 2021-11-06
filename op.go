@@ -13,6 +13,24 @@ func (cpu *CPU) opJump(addr uint16) error {
 	return nil
 }
 
+func (cpu *CPU) opCallSub(addr uint16) error {
+	err := cpu.callStack.push(cpu.pc + 2)
+	if err != nil {
+		return err
+	}
+	cpu.pc = addr
+	return nil
+}
+
+func (cpu *CPU) opReturn() error {
+	addr, err := cpu.callStack.pop()
+	if err != nil {
+		return err
+	}
+	cpu.pc = addr
+	return nil
+}
+
 func (cpu *CPU) opLoadReg(reg uint8, val uint8) error {
 	cpu.reg[reg] = val
 	return nil
@@ -23,12 +41,12 @@ func (cpu *CPU) opAddReg(reg uint8, val uint8) error {
 	return nil
 }
 
-func (cpu *CPU) LoadI(val uint16) error {
+func (cpu *CPU) opLoadI(val uint16) error {
 	cpu.i = val
 	return nil
 }
 
-func (cpu *CPU) Draw(x, y, n uint8) error {
+func (cpu *CPU) opDraw(x, y, n uint8) error {
 	// draw stuff
 	startX := cpu.reg[x] % 64
 	startY := cpu.reg[y] % 32
@@ -54,5 +72,41 @@ func (cpu *CPU) Draw(x, y, n uint8) error {
 	if cpu.displayCallback != nil {
 		cpu.displayCallback(cpu.display)
 	}
+
+	return nil
+}
+
+func (cpu *CPU) opSkipRegEqLit(reg uint8, lit uint8) error {
+	regv := cpu.reg[reg]
+	if regv == lit {
+		cpu.pc += 2
+	}
+	return nil
+}
+
+func (cpu *CPU) opSkipRegNeqLit(reg uint8, lit uint8) error {
+	regv := cpu.reg[reg]
+	if regv != lit {
+		cpu.pc += 2
+	}
+	return nil
+}
+
+func (cpu *CPU) opSkipRegEqReq(v1, v2 uint8) error {
+	if cpu.reg[v1] == cpu.reg[v2] {
+		cpu.pc += 2
+	}
+	return nil
+}
+
+func (cpu *CPU) opSkipRegNeqReq(v1, v2 uint8) error {
+	if cpu.reg[v1] != cpu.reg[v2] {
+		cpu.pc += 2
+	}
+	return nil
+}
+
+func (cpu *CPU) opLoadRegReg(v1, v2 uint8) error {
+	cpu.reg[v1] = cpu.reg[v2]
 	return nil
 }

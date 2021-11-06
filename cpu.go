@@ -26,12 +26,14 @@ type CPU struct {
 	// number if instruction per second (Hz)
 	speed int64
 	delay time.Duration
+
+	callStack stack
 }
 
 func NewCPU() *CPU {
 	cpu := &CPU{
 		pc:    0x200,
-		speed: 10,
+		speed: 500,
 	}
 	cpu.delay = time.Duration(1000000/cpu.speed) * time.Microsecond
 	return cpu
@@ -67,7 +69,7 @@ func (cpu *CPU) Step() {
 
 	err := cpu.exec(i1, i2, i3, i4)
 	if err != nil {
-		fmt.Print("ERROR ", err, ", halting...")
+		fmt.Print("ERROR ", err, " HALT")
 		cpu.halt = true
 	}
 	fmt.Print("\n")
@@ -83,50 +85,82 @@ func (cpu *CPU) fetch() (uint8, uint8, uint8, uint8) {
 }
 
 func (cpu *CPU) exec(i1, i2, i3, i4 uint8) error {
-	fmt.Printf("0x%X%X%X%X\t", i1, i2, i3, i4)
+	fmt.Printf("0x%X%X%X%X\t%s\t", i1, i2, i3, i4, PrintInst(i1, i2, i3, i4))
 
 	if i1 == 0 && i2 == 0 && i3 == 0 && i4 == 0 {
-		fmt.Print("HALT")
 		cpu.halt = true
 		return nil
 	}
 
 	if i1 == 0 && i2 == 0 && i3 == 0xE && i4 == 0 {
-		fmt.Print("CLR")
 		return cpu.opClearDisplay()
 	}
 
-	if i1 == 1 {
+	if i1 == 0 && i2 == 0 && i3 == 0xE && i4 == 0xE {
+		return cpu.opReturn()
+	}
+
+	if i1 == 0x1 {
 		addr := combine3u4(i2, i3, i4)
-		fmt.Printf("JMP   0x%X", addr)
 		return cpu.opJump(addr)
 	}
 
-	if i1 == 6 {
+	if i1 == 0x2 {
+		addr := combine3u4(i2, i3, i4)
+		return cpu.opCallSub(addr)
+	}
+
+	if i1 == 0x3 {
 		reg := i2
 		val := combine2u4(i3, i4)
-		fmt.Printf("MOV   V%X %#X", reg, val)
+		return cpu.opSkipRegEqLit(reg, val)
+	}
+
+	if i1 == 0x4 {
+		reg := i2
+		val := combine2u4(i3, i4)
+		return cpu.opSkipRegNeqLit(reg, val)
+	}
+
+	if i1 == 0x5 {
+		reg1 := i2
+		reg2 := i3
+		return cpu.opSkipRegEqReq(reg1, reg2)
+	}
+
+	if i1 == 0x6 {
+		reg := i2
+		val := combine2u4(i3, i4)
 		return cpu.opLoadReg(reg, val)
 	}
 
 	if i1 == 0x7 {
 		reg := i2
 		val := combine2u4(i3, i4)
-		fmt.Printf("ADD   V%X %#X", reg, val)
 		return cpu.opAddReg(reg, val)
+	}
+
+	if i1 == 0x8 && i4 == 0x0 {
+		reg1 := i2
+		reg2 := i3
+		return cpu.opLoadRegReg(reg1, reg2)
+	}
+
+	if i1 == 0x9 {
+		reg1 := i2
+		reg2 := i3
+		return cpu.opSkipRegNeqReq(reg1, reg2)
 	}
 
 	if i1 == 0xA {
 		addr := combine3u4(i2, i3, i4)
-		fmt.Printf("MOV   I %#X", addr)
-		return cpu.LoadI(addr)
+		return cpu.opLoadI(addr)
 	}
 
 	if i1 == 0xD {
 		x, y, n := i2, i3, i4
-		fmt.Printf("DRW   V%X V%X %d", x, y, n)
-		return cpu.Draw(x, y, n)
+		return cpu.opDraw(x, y, n)
 	}
 
-	return fmt.Errorf("INVALID 0x%X%X%X%X\t", i1, i2, i3, i4)
+	return fmt.Errorf("INVALID\t")
 }
