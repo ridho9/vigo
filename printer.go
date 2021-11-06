@@ -46,6 +46,10 @@ func PrintInst(i1, i2, i3, i4 uint8) string {
 		return fmt.Sprintf("ADD\tV%X %#X", i2, i34)
 	}
 
+	if i1 == 0x8 && i4 == 0x0 {
+		return fmt.Sprintf("MOV\tV%X V%X", i2, i3)
+	}
+
 	if i1 == 0x9 {
 		return fmt.Sprintf("SNEQ\tV%X V%X", i2, i3)
 	}

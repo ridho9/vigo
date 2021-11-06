@@ -138,6 +138,15 @@ func TestExec(t *testing.T) {
 		assert.Equal(t, uint8(0xAB), cpu.reg[0x1])
 	})
 
+	t.Run("8XY1 set vx=vx|vy", func(t *testing.T) {
+		cpu := NewCPU()
+		cpu.reg[0x1] = 0x12
+		cpu.reg[0x2] = 0xAB
+		err := cpu.exec16(0x8121)
+		assert.NoError(t, err)
+		assert.Equal(t, uint8(0xAB|0x12), cpu.reg[0x1])
+	})
+
 	t.Run("9XY0 skip vx != vy", func(t *testing.T) {
 		t.Run("skip", func(t *testing.T) {
 			cpu := NewCPU()
