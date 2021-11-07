@@ -24,7 +24,7 @@ func main() {
 }
 
 func run(filename string) {
-	rl.InitWindow(640, 320, "raylib [core] example - basic window")
+	rl.InitWindow(640, 320, "Vigo")
 	rl.SetTargetFPS(60)
 
 	go runCPU(filename)

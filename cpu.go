@@ -7,8 +7,18 @@ import (
 
 type Display [64][32]bool
 type Quirk struct {
-	ShiftQuirks bool
+	ShiftQuirks     bool
+	LoadStoreQuirks bool
 }
+
+func DefaultQuirk() Quirk {
+	return Quirk{
+		ShiftQuirks:     true,
+		LoadStoreQuirks: true,
+	}
+}
+
+const TIMER_DURATION = time.Duration(1000/60) * time.Millisecond
 
 type CPU struct {
 	halt bool
@@ -37,11 +47,9 @@ func NewCPU(d *Display) *CPU {
 		pc:      0x200,
 		speed:   500,
 		display: d,
-		quirk: Quirk{
-			ShiftQuirks: true,
-		},
+		quirk:   DefaultQuirk(),
 	}
-	cpu.delay = time.Duration(1000000/cpu.speed) * time.Microsecond
+	cpu.delay = time.Duration(1000/cpu.speed) * time.Millisecond
 	return cpu
 }
 
@@ -58,9 +66,26 @@ func (cpu *CPU) LoadRom(data []byte) {
 }
 
 func (cpu *CPU) Run() {
+	lastTimerUpdate := time.Now()
 	for !cpu.halt {
 		cpu.Step()
+
+		if time.Since(lastTimerUpdate) >= TIMER_DURATION {
+			cpu.TimerStep()
+			lastTimerUpdate = time.Now()
+		}
+
 		time.Sleep(cpu.delay)
+	}
+}
+
+func (cpu *CPU) TimerStep() {
+	if cpu.delayTimer > 0 {
+		cpu.delayTimer -= 1
+	}
+
+	if cpu.soundTimer > 0 {
+		cpu.soundTimer -= 1
 	}
 }
 
@@ -178,10 +203,22 @@ func (cpu *CPU) exec(i1, i2, i3, i4 uint8) error {
 		return cpu.opSubRegRegO(reg1, reg2)
 	}
 
+	if i1 == 0x8 && i4 == 0x6 {
+		reg1 := i2
+		reg2 := i3
+		return cpu.opShiftRight(reg1, reg2)
+	}
+
 	if i1 == 0x8 && i4 == 0x7 {
 		reg1 := i2
 		reg2 := i3
 		return cpu.opSubbRegRegO(reg1, reg2)
+	}
+
+	if i1 == 0x8 && i4 == 0xE {
+		reg1 := i2
+		reg2 := i3
+		return cpu.opShiftLeft(reg1, reg2)
 	}
 
 	if i1 == 0x9 {
@@ -198,6 +235,36 @@ func (cpu *CPU) exec(i1, i2, i3, i4 uint8) error {
 	if i1 == 0xD {
 		x, y, n := i2, i3, i4
 		return cpu.opDraw(x, y, n)
+	}
+
+	if i1 == 0xF && i3 == 0x0 && i4 == 0x7 {
+		reg1 := i2
+		return cpu.opLoadDelayTimer(reg1)
+	}
+
+	if i1 == 0xF && i3 == 0x1 && i4 == 0x5 {
+		reg1 := i2
+		return cpu.opSetDelayTimer(reg1)
+	}
+
+	if i1 == 0xF && i3 == 0x1 && i4 == 0x8 {
+		reg1 := i2
+		return cpu.opSetSoundTimer(reg1)
+	}
+
+	if i1 == 0xF && i3 == 0x5 && i4 == 0x5 {
+		reg1 := i2
+		return cpu.opStoreIndex(reg1)
+	}
+
+	if i1 == 0xF && i3 == 0x3 && i4 == 0x3 {
+		reg1 := i2
+		return cpu.opBCD(reg1)
+	}
+
+	if i1 == 0xF && i3 == 0x6 && i4 == 0x5 {
+		reg1 := i2
+		return cpu.opLoadIndex(reg1)
 	}
 
 	return fmt.Errorf("INVALID\t")

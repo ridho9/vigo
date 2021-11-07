@@ -151,3 +151,66 @@ func (cpu *CPU) opSubbRegRegO(v1, v2 uint8) error {
 	}
 	return nil
 }
+
+func (cpu *CPU) opShiftRight(v1, v2 uint8) error {
+	if !cpu.quirk.ShiftQuirks {
+		cpu.reg[v1] = cpu.reg[v2]
+	}
+	cpu.reg[0xF] = cpu.reg[v1] & 1
+	cpu.reg[v1] >>= 1
+	return nil
+}
+
+func (cpu *CPU) opShiftLeft(v1, v2 uint8) error {
+	if !cpu.quirk.ShiftQuirks {
+		cpu.reg[v1] = cpu.reg[v2]
+	}
+	cpu.reg[0xF] = (cpu.reg[v1] & (1 << 7)) >> 7
+	cpu.reg[v1] <<= 1
+	return nil
+}
+
+func (cpu *CPU) opLoadDelayTimer(v1 uint8) error {
+	cpu.reg[v1] = cpu.delayTimer
+	return nil
+}
+
+func (cpu *CPU) opSetDelayTimer(v1 uint8) error {
+	cpu.delayTimer = cpu.reg[v1]
+	return nil
+}
+
+func (cpu *CPU) opSetSoundTimer(v1 uint8) error {
+	cpu.soundTimer = cpu.reg[v1]
+	return nil
+}
+
+func (cpu *CPU) opStoreIndex(n uint8) error {
+	for i := 0; i <= int(n); i += 1 {
+		cpu.memory[cpu.i+uint16(i)] = cpu.reg[i]
+	}
+
+	if !cpu.quirk.LoadStoreQuirks {
+		cpu.i += uint16(n)
+	}
+	return nil
+}
+
+func (cpu *CPU) opLoadIndex(n uint8) error {
+	for i := 0; i <= int(n); i += 1 {
+		cpu.reg[i] = cpu.memory[cpu.i+uint16(i)]
+	}
+
+	if !cpu.quirk.LoadStoreQuirks {
+		cpu.i += uint16(n)
+	}
+	return nil
+}
+
+func (cpu *CPU) opBCD(v1 uint8) error {
+	v := cpu.reg[v1]
+	cpu.memory[cpu.i] = v / 100
+	cpu.memory[cpu.i+1] = (v / 10) % 10
+	cpu.memory[cpu.i+2] = v % 10
+	return nil
+}

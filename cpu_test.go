@@ -228,6 +228,46 @@ func TestExec(t *testing.T) {
 		})
 	})
 
+	t.Run("8XY6 vx shr 1 quirk true", func(t *testing.T) {
+		t.Run("no shiftout", func(t *testing.T) {
+			cpu := NewCPU(&Display{})
+			cpu.reg[0x1] = 0b1010_1010
+			err := cpu.exec16(0x8126)
+			assert.NoError(t, err)
+			assert.Equal(t, uint8(0b0101_0101), cpu.reg[0x1])
+			assert.Equal(t, uint8(0), cpu.reg[0xF])
+		})
+
+		t.Run("shift out", func(t *testing.T) {
+			cpu := NewCPU(&Display{})
+			cpu.reg[0x1] = 0b0101_0101
+			err := cpu.exec16(0x8126)
+			assert.NoError(t, err)
+			assert.Equal(t, uint8(0b0010_1010), cpu.reg[0x1])
+			assert.Equal(t, uint8(1), cpu.reg[0xF])
+		})
+	})
+
+	t.Run("8XYE vx shr 1 quirk true", func(t *testing.T) {
+		t.Run("shiftout", func(t *testing.T) {
+			cpu := NewCPU(&Display{})
+			cpu.reg[0x1] = 0b1010_1010
+			err := cpu.exec16(0x812E)
+			assert.NoError(t, err)
+			assert.Equal(t, uint8(0b0101_0100), cpu.reg[0x1])
+			assert.Equal(t, uint8(1), cpu.reg[0xF])
+		})
+
+		t.Run("no shiftout", func(t *testing.T) {
+			cpu := NewCPU(&Display{})
+			cpu.reg[0x1] = 0b0101_0101
+			err := cpu.exec16(0x812E)
+			assert.NoError(t, err)
+			assert.Equal(t, uint8(0b1010_1010), cpu.reg[0x1])
+			assert.Equal(t, uint8(0), cpu.reg[0xF])
+		})
+	})
+
 	t.Run("9XY0 skip vx != vy", func(t *testing.T) {
 		t.Run("skip", func(t *testing.T) {
 			cpu := NewCPU(&Display{})
