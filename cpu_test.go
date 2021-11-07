@@ -144,6 +144,90 @@ func TestExec(t *testing.T) {
 		assert.Equal(t, uint8(0xAB|0x12), cpu.reg[0x1])
 	})
 
+	t.Run("8XY2 set vx=vx&vy", func(t *testing.T) {
+		cpu := NewCPU(&Display{})
+		cpu.reg[0x1] = 0x12
+		cpu.reg[0x2] = 0xAB
+		err := cpu.exec16(0x8122)
+		assert.NoError(t, err)
+		assert.Equal(t, uint8(0xAB&0x12), cpu.reg[0x1])
+	})
+
+	t.Run("8XY3 set vx=vx^vy", func(t *testing.T) {
+		cpu := NewCPU(&Display{})
+		cpu.reg[0x1] = 0x12
+		cpu.reg[0x2] = 0xAB
+		err := cpu.exec16(0x8123)
+		assert.NoError(t, err)
+		assert.Equal(t, uint8(0xAB^0x12), cpu.reg[0x1])
+	})
+
+	t.Run("8XY4 vx+=vy with carry in vf", func(t *testing.T) {
+		t.Run("no carry", func(t *testing.T) {
+			cpu := NewCPU(&Display{})
+			cpu.reg[0x1] = 0x12
+			cpu.reg[0x2] = 0x34
+			err := cpu.exec16(0x8124)
+			assert.NoError(t, err)
+			assert.Equal(t, uint8(0x12+0x34), cpu.reg[0x1])
+			assert.Equal(t, uint8(0), cpu.reg[0xF])
+		})
+
+		t.Run("with carry", func(t *testing.T) {
+			cpu := NewCPU(&Display{})
+			cpu.reg[0x1] = 0xFF
+			cpu.reg[0x2] = 0x01
+			err := cpu.exec16(0x8124)
+			assert.NoError(t, err)
+			assert.Equal(t, uint8(0x00), cpu.reg[0x1])
+			assert.Equal(t, uint8(1), cpu.reg[0xF])
+		})
+	})
+
+	t.Run("8XY5 vx-=vy with *flow in vf", func(t *testing.T) {
+		t.Run("no carry", func(t *testing.T) {
+			cpu := NewCPU(&Display{})
+			cpu.reg[0x1] = 0x34
+			cpu.reg[0x2] = 0x12
+			err := cpu.exec16(0x8125)
+			assert.NoError(t, err)
+			assert.Equal(t, uint8(0x34-0x12), cpu.reg[0x1])
+			assert.Equal(t, uint8(0), cpu.reg[0xF])
+		})
+
+		t.Run("with carry", func(t *testing.T) {
+			cpu := NewCPU(&Display{})
+			cpu.reg[0x1] = 0x00
+			cpu.reg[0x2] = 0x01
+			err := cpu.exec16(0x8125)
+			assert.NoError(t, err)
+			assert.Equal(t, uint8(0xFF), cpu.reg[0x1])
+			assert.Equal(t, uint8(1), cpu.reg[0xF])
+		})
+	})
+
+	t.Run("8XY7 vx=vy-vx with *flow in vf", func(t *testing.T) {
+		t.Run("no carry", func(t *testing.T) {
+			cpu := NewCPU(&Display{})
+			cpu.reg[0x1] = 0x12
+			cpu.reg[0x2] = 0x34
+			err := cpu.exec16(0x8127)
+			assert.NoError(t, err)
+			assert.Equal(t, uint8(0x34-0x12), cpu.reg[0x1])
+			assert.Equal(t, uint8(0), cpu.reg[0xF])
+		})
+
+		t.Run("with carry", func(t *testing.T) {
+			cpu := NewCPU(&Display{})
+			cpu.reg[0x1] = 0x01
+			cpu.reg[0x2] = 0x00
+			err := cpu.exec16(0x8127)
+			assert.NoError(t, err)
+			assert.Equal(t, uint8(0xFF), cpu.reg[0x1])
+			assert.Equal(t, uint8(1), cpu.reg[0xF])
+		})
+	})
+
 	t.Run("9XY0 skip vx != vy", func(t *testing.T) {
 		t.Run("skip", func(t *testing.T) {
 			cpu := NewCPU(&Display{})

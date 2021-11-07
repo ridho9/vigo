@@ -6,6 +6,9 @@ import (
 )
 
 type Display [64][32]bool
+type Quirk struct {
+	ShiftQuirks bool
+}
 
 type CPU struct {
 	halt bool
@@ -26,6 +29,7 @@ type CPU struct {
 	delay time.Duration
 
 	callStack stack
+	quirk     Quirk
 }
 
 func NewCPU(d *Display) *CPU {
@@ -33,6 +37,9 @@ func NewCPU(d *Display) *CPU {
 		pc:      0x200,
 		speed:   500,
 		display: d,
+		quirk: Quirk{
+			ShiftQuirks: true,
+		},
 	}
 	cpu.delay = time.Duration(1000000/cpu.speed) * time.Microsecond
 	return cpu
@@ -139,6 +146,42 @@ func (cpu *CPU) exec(i1, i2, i3, i4 uint8) error {
 		reg1 := i2
 		reg2 := i3
 		return cpu.opLoadRegReg(reg1, reg2)
+	}
+
+	if i1 == 0x8 && i4 == 0x1 {
+		reg1 := i2
+		reg2 := i3
+		return cpu.opOrRegReg(reg1, reg2)
+	}
+
+	if i1 == 0x8 && i4 == 0x2 {
+		reg1 := i2
+		reg2 := i3
+		return cpu.opAndRegReg(reg1, reg2)
+	}
+
+	if i1 == 0x8 && i4 == 0x3 {
+		reg1 := i2
+		reg2 := i3
+		return cpu.opXorRegReg(reg1, reg2)
+	}
+
+	if i1 == 0x8 && i4 == 0x4 {
+		reg1 := i2
+		reg2 := i3
+		return cpu.opAddRegRegO(reg1, reg2)
+	}
+
+	if i1 == 0x8 && i4 == 0x5 {
+		reg1 := i2
+		reg2 := i3
+		return cpu.opSubRegRegO(reg1, reg2)
+	}
+
+	if i1 == 0x8 && i4 == 0x7 {
+		reg1 := i2
+		reg2 := i3
+		return cpu.opSubbRegRegO(reg1, reg2)
 	}
 
 	if i1 == 0x9 {

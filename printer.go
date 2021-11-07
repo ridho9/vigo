@@ -50,6 +50,30 @@ func PrintInst(i1, i2, i3, i4 uint8) string {
 		return fmt.Sprintf("MOV\tV%X V%X", i2, i3)
 	}
 
+	if i1 == 0x8 && i4 == 0x1 {
+		return fmt.Sprintf("OR\tV%X V%X", i2, i3)
+	}
+
+	if i1 == 0x8 && i4 == 0x2 {
+		return fmt.Sprintf("AND\tV%X V%X", i2, i3)
+	}
+
+	if i1 == 0x8 && i4 == 0x3 {
+		return fmt.Sprintf("XOR\tV%X V%X", i2, i3)
+	}
+
+	if i1 == 0x8 && i4 == 0x4 {
+		return fmt.Sprintf("ADD.\tV%X V%X", i2, i3)
+	}
+
+	if i1 == 0x8 && i4 == 0x5 {
+		return fmt.Sprintf("SUB.\tV%X V%X", i2, i3)
+	}
+
+	if i1 == 0x8 && i4 == 0x7 {
+		return fmt.Sprintf("SUBB.\tV%X V%X", i2, i3)
+	}
+
 	if i1 == 0x9 {
 		return fmt.Sprintf("SNEQ\tV%X V%X", i2, i3)
 	}

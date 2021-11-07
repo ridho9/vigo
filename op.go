@@ -1,7 +1,11 @@
 package vigo
 
 func (cpu *CPU) opClearDisplay() error {
-	cpu.display = &Display{}
+	for x := 0; x < 64; x += 1 {
+		for y := 0; y < 32; y += 1 {
+			cpu.display[x][y] = false
+		}
+	}
 	return nil
 }
 
@@ -100,5 +104,50 @@ func (cpu *CPU) opSkipRegNeqReq(v1, v2 uint8) error {
 
 func (cpu *CPU) opLoadRegReg(v1, v2 uint8) error {
 	cpu.reg[v1] = cpu.reg[v2]
+	return nil
+}
+
+func (cpu *CPU) opOrRegReg(v1, v2 uint8) error {
+	cpu.reg[v1] |= cpu.reg[v2]
+	return nil
+}
+
+func (cpu *CPU) opAndRegReg(v1, v2 uint8) error {
+	cpu.reg[v1] &= cpu.reg[v2]
+	return nil
+}
+
+func (cpu *CPU) opXorRegReg(v1, v2 uint8) error {
+	cpu.reg[v1] ^= cpu.reg[v2]
+	return nil
+}
+
+func (cpu *CPU) opAddRegRegO(v1, v2 uint8) error {
+	cpu.reg[0xF] = 0
+	startV := cpu.reg[v1]
+	cpu.reg[v1] += cpu.reg[v2]
+	if cpu.reg[v1] < startV {
+		cpu.reg[0xF] = 1
+	}
+	return nil
+}
+
+func (cpu *CPU) opSubRegRegO(v1, v2 uint8) error {
+	cpu.reg[0xF] = 0
+	startV := cpu.reg[v1]
+	cpu.reg[v1] -= cpu.reg[v2]
+	if cpu.reg[v1] > startV {
+		cpu.reg[0xF] = 1
+	}
+	return nil
+}
+
+func (cpu *CPU) opSubbRegRegO(v1, v2 uint8) error {
+	cpu.reg[0xF] = 0
+	startV := cpu.reg[v2]
+	cpu.reg[v1] = cpu.reg[v2] - cpu.reg[v1]
+	if cpu.reg[v1] > startV {
+		cpu.reg[0xF] = 1
+	}
 	return nil
 }

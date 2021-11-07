@@ -10,7 +10,7 @@ import (
 	"github.com/ridho9/vigo"
 )
 
-var display vigo.Display
+var display *vigo.Display
 
 func main() {
 	if len(os.Args) < 2 {
@@ -18,6 +18,7 @@ func main() {
 		os.Exit(1)
 	}
 	filename := os.Args[1]
+	display = &vigo.Display{}
 
 	run(filename)
 }
@@ -45,7 +46,7 @@ func runCPU(filename string) {
 		os.Exit(2)
 	}
 
-	cpu := vigo.NewCPU(&display)
+	cpu := vigo.NewCPU(display)
 	cpu.LoadRom(rom)
 
 	cpu.Run()
