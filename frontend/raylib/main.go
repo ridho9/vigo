@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"time"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"github.com/ridho9/vigo"
@@ -29,14 +30,7 @@ func run(filename string) {
 
 	for !rl.WindowShouldClose() {
 		rl.BeginDrawing()
-		rl.ClearBackground(rl.Black)
-		for y := int32(0); y < 32; y++ {
-			for x := int32(0); x < 64; x++ {
-				if display[x][y] {
-					rl.DrawRectangle(x*10, y*10, 10, 10, rl.White)
-				}
-			}
-		}
+		drawFrame()
 		rl.EndDrawing()
 	}
 
@@ -44,18 +38,27 @@ func run(filename string) {
 }
 
 func runCPU(filename string) {
+	startTime := time.Now()
 	rom, err := ioutil.ReadFile(filename)
 	if err != nil {
 		fmt.Println("err ", err)
 		os.Exit(2)
 	}
 
-	cpu := vigo.NewCPU()
+	cpu := vigo.NewCPU(&display)
 	cpu.LoadRom(rom)
 
-	cpu.SetDisplayCallback(func(d vigo.Display) {
-		display = d
-	})
-
 	cpu.Run()
+	fmt.Println("elapsed time", time.Since(startTime))
+}
+
+func drawFrame() {
+	rl.ClearBackground(rl.Black)
+	for y := int32(0); y < 32; y++ {
+		for x := int32(0); x < 64; x++ {
+			if display[x][y] {
+				rl.DrawRectangle(x*10, y*10, 10, 10, rl.White)
+			}
+		}
+	}
 }

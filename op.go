@@ -1,10 +1,7 @@
 package vigo
 
 func (cpu *CPU) opClearDisplay() error {
-	cpu.display = Display{}
-	if cpu.displayCallback != nil {
-		cpu.displayCallback(cpu.display)
-	}
+	cpu.display = &Display{}
 	return nil
 }
 
@@ -66,11 +63,6 @@ func (cpu *CPU) opDraw(x, y, n uint8) error {
 				cpu.reg[0xF] = 1
 			}
 		}
-	}
-
-	// callback
-	if cpu.displayCallback != nil {
-		cpu.displayCallback(cpu.display)
 	}
 
 	return nil

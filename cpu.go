@@ -6,7 +6,6 @@ import (
 )
 
 type Display [64][32]bool
-type displayCallback func(Display)
 
 type CPU struct {
 	halt bool
@@ -20,27 +19,23 @@ type CPU struct {
 	delayTimer uint8
 	soundTimer uint8
 
-	display         Display
-	displayCallback displayCallback
+	display *Display
 
-	// number if instruction per second (Hz)
+	// number of instruction per second (Hz)
 	speed int64
 	delay time.Duration
 
 	callStack stack
 }
 
-func NewCPU() *CPU {
+func NewCPU(d *Display) *CPU {
 	cpu := &CPU{
-		pc:    0x200,
-		speed: 500,
+		pc:      0x200,
+		speed:   500,
+		display: d,
 	}
 	cpu.delay = time.Duration(1000000/cpu.speed) * time.Microsecond
 	return cpu
-}
-
-func (cpu *CPU) SetDisplayCallback(dc func(Display)) {
-	cpu.displayCallback = dc
 }
 
 func (cpu *CPU) WriteInst(addr uint16, inst uint16) {
