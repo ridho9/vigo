@@ -119,5 +119,21 @@ func PrintInst(i1, i2, i3, i4 uint8) string {
 		return fmt.Sprintf("LDI\t%d", i2)
 	}
 
+	if i1 == 0xF && i3 == 0x2 && i4 == 0x9 {
+		return fmt.Sprintf("LDIF\tV%X", i2)
+	}
+
+	if i1 == 0xF && i3 == 0x1 && i4 == 0xE {
+		return fmt.Sprintf("ADD\tI V%X", i2)
+	}
+
+	if i1 == 0xE && i3 == 0x9 && i4 == 0xE {
+		return fmt.Sprintf("SKP\tV%X", i2)
+	}
+
+	if i1 == 0xE && i3 == 0xA && i4 == 0x1 {
+		return fmt.Sprintf("SKNP\tV%X", i2)
+	}
+
 	return "???"
 }

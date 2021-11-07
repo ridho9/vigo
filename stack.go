@@ -3,7 +3,7 @@ package vigo
 import "errors"
 
 type stack struct {
-	data [16]uint16
+	data [64]uint16
 	size int
 }
 

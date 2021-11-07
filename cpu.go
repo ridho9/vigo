@@ -40,16 +40,20 @@ type CPU struct {
 
 	callStack stack
 	quirk     Quirk
+
+	keyDown *[0x10]bool
 }
 
-func NewCPU(d *Display) *CPU {
+func NewCPU(d *Display, kD *[0x10]bool) *CPU {
 	cpu := &CPU{
 		pc:      0x200,
 		speed:   500,
 		display: d,
 		quirk:   DefaultQuirk(),
+		keyDown: kD,
 	}
 	cpu.delay = time.Duration(1000/cpu.speed) * time.Millisecond
+	cpu.setupFont()
 	return cpu
 }
 
@@ -125,6 +129,10 @@ func (cpu *CPU) exec(i1, i2, i3, i4 uint8) error {
 
 	if i1 == 0 && i2 == 0 && i3 == 0xE && i4 == 0xE {
 		return cpu.opReturn()
+	}
+
+	if i1 == 0 && i2 == 0 && i3 == 0xF && i4 == 0xF {
+		return nil
 	}
 
 	if i1 == 0x1 {
@@ -232,6 +240,18 @@ func (cpu *CPU) exec(i1, i2, i3, i4 uint8) error {
 		return cpu.opLoadI(addr)
 	}
 
+	if i1 == 0xB {
+		reg := i2
+		xnn := combine3u4(i2, i3, i4)
+		return cpu.opJumpOffset(reg, xnn)
+	}
+
+	if i1 == 0xC {
+		reg := i2
+		val := combine2u4(i3, i4)
+		return cpu.opRandom(reg, val)
+	}
+
 	if i1 == 0xD {
 		x, y, n := i2, i3, i4
 		return cpu.opDraw(x, y, n)
@@ -267,5 +287,57 @@ func (cpu *CPU) exec(i1, i2, i3, i4 uint8) error {
 		return cpu.opLoadIndex(reg1)
 	}
 
+	if i1 == 0xF && i3 == 0x2 && i4 == 0x9 {
+		reg1 := i2
+		return cpu.opLoadFont(reg1)
+	}
+
+	if i1 == 0xF && i3 == 0x0 && i4 == 0xA {
+		reg1 := i2
+		return cpu.opWaitKeypress(reg1)
+	}
+
+	if i1 == 0xF && i3 == 0x1 && i4 == 0xE {
+		reg1 := i2
+		return cpu.opAddIndex(reg1)
+	}
+
+	if i1 == 0xE && i3 == 0x9 && i4 == 0xE {
+		reg1 := i2
+		return cpu.opSkipIfPressed(reg1)
+	}
+
+	if i1 == 0xE && i3 == 0xA && i4 == 0x1 {
+		reg1 := i2
+		return cpu.opSkipIfNotPressed(reg1)
+	}
+
 	return fmt.Errorf("INVALID\t")
+}
+
+var FONT_TABLE = [0x10][5]uint8{
+	{0xF0, 0x90, 0x90, 0x90, 0xF0}, //0x0
+	{0x20, 0x60, 0x20, 0x20, 0x70}, //0x1
+	{0xF0, 0x10, 0xF0, 0x80, 0xF0}, //0x2
+	{0xF0, 0x10, 0xF0, 0x10, 0xF0}, //0x3
+	{0x90, 0x90, 0xF0, 0x10, 0x10}, //0x4
+	{0xF0, 0x80, 0xF0, 0x10, 0xF0}, //0x5
+	{0xF0, 0x80, 0xF0, 0x90, 0xF0}, //0x6
+	{0xF0, 0x10, 0x20, 0x40, 0x40}, //0x7
+	{0xF0, 0x90, 0xF0, 0x90, 0xF0}, //0x8
+	{0xF0, 0x90, 0xF0, 0x10, 0xF0}, //0x9
+	{0xF0, 0x90, 0xF0, 0x90, 0x90}, //0xa
+	{0xE0, 0x90, 0xE0, 0x90, 0xE0}, //0xb
+	{0xF0, 0x80, 0x80, 0x80, 0xF0}, //0xc
+	{0xE0, 0x90, 0x90, 0x90, 0xE0}, //0xd
+	{0xF0, 0x80, 0xF0, 0x80, 0xF0}, //0xe
+	{0xF0, 0x80, 0xF0, 0x80, 0x80}, //0xf
+}
+
+func (cpu *CPU) setupFont() {
+	for i := 0; i <= 0xF; i++ {
+		for j := 0; j < 5; j++ {
+			cpu.memory[(i*5)+j] = FONT_TABLE[i][j]
+		}
+	}
 }

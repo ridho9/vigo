@@ -1,5 +1,10 @@
 package vigo
 
+import (
+	"fmt"
+	"math/rand"
+)
+
 func (cpu *CPU) opClearDisplay() error {
 	for x := 0; x < 64; x += 1 {
 		for y := 0; y < 32; y += 1 {
@@ -15,7 +20,7 @@ func (cpu *CPU) opJump(addr uint16) error {
 }
 
 func (cpu *CPU) opCallSub(addr uint16) error {
-	err := cpu.callStack.push(cpu.pc + 2)
+	err := cpu.callStack.push(cpu.pc)
 	if err != nil {
 		return err
 	}
@@ -25,6 +30,7 @@ func (cpu *CPU) opCallSub(addr uint16) error {
 
 func (cpu *CPU) opReturn() error {
 	addr, err := cpu.callStack.pop()
+	fmt.Printf("TO %0#X ", addr)
 	if err != nil {
 		return err
 	}
@@ -133,22 +139,20 @@ func (cpu *CPU) opAddRegRegO(v1, v2 uint8) error {
 }
 
 func (cpu *CPU) opSubRegRegO(v1, v2 uint8) error {
-	cpu.reg[0xF] = 0
-	startV := cpu.reg[v1]
-	cpu.reg[v1] -= cpu.reg[v2]
-	if cpu.reg[v1] > startV {
-		cpu.reg[0xF] = 1
+	cpu.reg[0xF] = 1
+	if cpu.reg[v1] < cpu.reg[v2] {
+		cpu.reg[0xF] = 0
 	}
+	cpu.reg[v1] -= cpu.reg[v2]
 	return nil
 }
 
 func (cpu *CPU) opSubbRegRegO(v1, v2 uint8) error {
-	cpu.reg[0xF] = 0
-	startV := cpu.reg[v2]
-	cpu.reg[v1] = cpu.reg[v2] - cpu.reg[v1]
-	if cpu.reg[v1] > startV {
-		cpu.reg[0xF] = 1
+	cpu.reg[0xF] = 1
+	if cpu.reg[v2] < cpu.reg[v1] {
+		cpu.reg[0xF] = 0
 	}
+	cpu.reg[v1] = cpu.reg[v2] - cpu.reg[v1]
 	return nil
 }
 
@@ -212,5 +216,51 @@ func (cpu *CPU) opBCD(v1 uint8) error {
 	cpu.memory[cpu.i] = v / 100
 	cpu.memory[cpu.i+1] = (v / 10) % 10
 	cpu.memory[cpu.i+2] = v % 10
+	return nil
+}
+
+func (cpu *CPU) opLoadFont(v1 uint8) error {
+	cpu.i = uint16(cpu.reg[v1] * 5)
+	return nil
+}
+
+func (cpu *CPU) opWaitKeypress(v1 uint8) error {
+	for k := uint8(0); k <= 0xF; k += 1 {
+		if cpu.keyDown[k] {
+			cpu.reg[v1] = k
+			return nil
+		}
+	}
+	cpu.pc -= 2
+	return nil
+}
+
+func (cpu *CPU) opAddIndex(v1 uint8) error {
+	cpu.i += uint16(cpu.reg[v1])
+	return nil
+}
+
+func (cpu *CPU) opSkipIfPressed(v1 uint8) error {
+	if cpu.keyDown[cpu.reg[v1]] {
+		cpu.pc += 2
+	}
+	return nil
+}
+
+func (cpu *CPU) opSkipIfNotPressed(v1 uint8) error {
+	if !cpu.keyDown[cpu.reg[v1]] {
+		cpu.pc += 2
+	}
+	return nil
+}
+
+func (cpu *CPU) opRandom(v1 uint8, n uint8) error {
+	r := uint8(rand.Uint32()) & n
+	cpu.reg[v1] = r
+	return nil
+}
+
+func (cpu *CPU) opJumpOffset(v1 uint8, xnn uint16) error {
+	cpu.pc = xnn + uint16(cpu.reg[v1])
 	return nil
 }

@@ -10,7 +10,8 @@ import (
 	"github.com/ridho9/vigo"
 )
 
-var display *vigo.Display
+var display vigo.Display
+var keyDown [16]bool
 
 func main() {
 	if len(os.Args) < 2 {
@@ -18,7 +19,6 @@ func main() {
 		os.Exit(1)
 	}
 	filename := os.Args[1]
-	display = &vigo.Display{}
 
 	run(filename)
 }
@@ -30,6 +30,7 @@ func run(filename string) {
 	go runCPU(filename)
 
 	for !rl.WindowShouldClose() {
+		pollKeyDown()
 		rl.BeginDrawing()
 		drawFrame()
 		rl.EndDrawing()
@@ -46,7 +47,7 @@ func runCPU(filename string) {
 		os.Exit(2)
 	}
 
-	cpu := vigo.NewCPU(display)
+	cpu := vigo.NewCPU(&display, &keyDown)
 	cpu.LoadRom(rom)
 
 	cpu.Run()
@@ -61,5 +62,30 @@ func drawFrame() {
 				rl.DrawRectangle(x*10, y*10, 10, 10, rl.White)
 			}
 		}
+	}
+}
+
+var KEYMAP = [0x10]int32{
+	rl.KeyX,     // 0
+	rl.KeyOne,   // 1
+	rl.KeyTwo,   // 2
+	rl.KeyThree, // 3
+	rl.KeyQ,     // 4
+	rl.KeyW,     // 5
+	rl.KeyE,     // 6
+	rl.KeyA,     // 7
+	rl.KeyS,     // 8
+	rl.KeyD,     // 9
+	rl.KeyZ,     // A
+	rl.KeyC,     // B
+	rl.KeyFour,  // C
+	rl.KeyR,     // D
+	rl.KeyF,     // E
+	rl.KeyV,     // F
+}
+
+func pollKeyDown() {
+	for k := 0; k <= 0xF; k++ {
+		keyDown[k] = rl.IsKeyDown(KEYMAP[k])
 	}
 }
