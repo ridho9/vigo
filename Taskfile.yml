@@ -1,0 +1,13 @@
+version: 3
+
+tasks:
+  run:sdl:
+    cmds:
+      - go run -v ./frontend/sdl/ {{.CLI_ARGS}}
+
+  build:sdl:
+    cmds:
+      - go build -o build/sdl -v ./frontend/sdl/
+
+    generates:
+      - build/sdl
