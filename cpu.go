@@ -47,7 +47,7 @@ type CPU struct {
 func NewCPU(d *Display, kD *[0x10]bool) *CPU {
 	cpu := &CPU{
 		pc:      0x200,
-		speed:   500,
+		speed:   1000,
 		display: d,
 		quirk:   DefaultQuirk(),
 		keyDown: kD,
