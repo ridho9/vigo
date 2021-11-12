@@ -47,13 +47,15 @@ func main() {
 	go runCPU(filename)
 
 	for {
+		// start := time.Now()
 		stop := pollEvent()
 		if stop {
 			break
 		}
 		update()
+		// fmt.Println("UPDATE TIME", time.Since(start))
 		draw()
-		sdl.Delay(16)
+		sdl.Delay(8)
 	}
 }
 

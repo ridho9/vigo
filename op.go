@@ -195,7 +195,7 @@ func (cpu *CPU) opStoreIndex(n uint8) error {
 	}
 
 	if !cpu.quirk.LoadStoreQuirks {
-		cpu.i += uint16(n)
+		cpu.i += uint16(n) + 1
 	}
 	return nil
 }
@@ -206,7 +206,7 @@ func (cpu *CPU) opLoadIndex(n uint8) error {
 	}
 
 	if !cpu.quirk.LoadStoreQuirks {
-		cpu.i += uint16(n)
+		cpu.i += uint16(n) + 1
 	}
 	return nil
 }
@@ -237,6 +237,11 @@ func (cpu *CPU) opWaitKeypress(v1 uint8) error {
 
 func (cpu *CPU) opAddIndex(v1 uint8) error {
 	cpu.i += uint16(cpu.reg[v1])
+	if cpu.i >= 0x1000 {
+		cpu.reg[0xF] = 1
+	} else {
+		cpu.reg[0xF] = 0
+	}
 	return nil
 }
 
@@ -261,6 +266,10 @@ func (cpu *CPU) opRandom(v1 uint8, n uint8) error {
 }
 
 func (cpu *CPU) opJumpOffset(v1 uint8, xnn uint16) error {
-	cpu.pc = xnn + uint16(cpu.reg[v1])
+	if cpu.quirk.JumpQuirks {
+		cpu.pc = xnn + uint16(cpu.reg[v1])
+	} else {
+		cpu.pc = xnn + uint16(cpu.reg[0])
+	}
 	return nil
 }

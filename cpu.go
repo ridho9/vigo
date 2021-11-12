@@ -9,12 +9,14 @@ type Display [64][32]bool
 type Quirk struct {
 	ShiftQuirks     bool
 	LoadStoreQuirks bool
+	JumpQuirks      bool
 }
 
 func DefaultQuirk() Quirk {
 	return Quirk{
 		ShiftQuirks:     true,
 		LoadStoreQuirks: true,
+		JumpQuirks:      false,
 	}
 }
 
@@ -35,8 +37,9 @@ type CPU struct {
 	display *Display
 
 	// number of instruction per second (Hz)
-	speed int64
-	delay time.Duration
+	speed      int64
+	delay      time.Duration
+	timerCycle float64
 
 	callStack stack
 	quirk     Quirk
@@ -53,6 +56,7 @@ func NewCPU(d *Display, kD *[0x10]bool) *CPU {
 		keyDown: kD,
 	}
 	cpu.delay = time.Duration(1000/cpu.speed) * time.Millisecond
+	cpu.timerCycle = float64(cpu.speed) / 60
 	cpu.setupFont()
 	return cpu
 }
@@ -70,13 +74,14 @@ func (cpu *CPU) LoadRom(data []byte) {
 }
 
 func (cpu *CPU) Run() {
-	lastTimerUpdate := time.Now()
+	lastTimerCycle := 0.0
 	for !cpu.halt {
 		cpu.Step()
+		lastTimerCycle += 1
 
-		if time.Since(lastTimerUpdate) >= TIMER_DURATION {
+		if lastTimerCycle >= cpu.timerCycle {
 			cpu.TimerStep()
-			lastTimerUpdate = time.Now()
+			lastTimerCycle -= cpu.timerCycle
 		}
 
 		time.Sleep(cpu.delay)
@@ -94,6 +99,8 @@ func (cpu *CPU) TimerStep() {
 }
 
 func (cpu *CPU) Step() {
+	start := time.Now()
+
 	fmt.Printf("PC=%#X\t", cpu.pc)
 
 	i1, i2, i3, i4 := cpu.fetch()
@@ -103,6 +110,8 @@ func (cpu *CPU) Step() {
 		fmt.Print("ERROR ", err, " HALT")
 		cpu.halt = true
 	}
+
+	fmt.Print("\tTIME ", time.Since(start))
 	fmt.Print("\n")
 }
 
