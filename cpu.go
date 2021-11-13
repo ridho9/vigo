@@ -33,6 +33,7 @@ type CPU struct {
 
 	delayTimer uint8
 	soundTimer uint8
+	soundFlag  *bool
 
 	display *Display
 
@@ -59,6 +60,10 @@ func NewCPU(d *Display, kD *[0x10]bool) *CPU {
 	cpu.timerCycle = float64(cpu.speed) / 60
 	cpu.setupFont()
 	return cpu
+}
+
+func (cpu *CPU) SetSoundFlag(s *bool) {
+	cpu.soundFlag = s
 }
 
 func (cpu *CPU) WriteInst(addr uint16, inst uint16) {
@@ -95,6 +100,10 @@ func (cpu *CPU) TimerStep() {
 
 	if cpu.soundTimer > 0 {
 		cpu.soundTimer -= 1
+
+		if cpu.soundFlag != nil {
+			*cpu.soundFlag = cpu.soundTimer != 0
+		}
 	}
 }
 
